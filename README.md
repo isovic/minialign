@@ -1,6 +1,6 @@
 # minialign
-Minimalistic aligner which uses Minimap for input mapping locations.
-
+Minimalistic aligner which uses Minimap for input mapping locations and Edlib (Myers' bit-vector impl.) for alignment.  
+  
 ## Build  
 ```  
 make modules  
