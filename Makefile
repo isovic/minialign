@@ -47,7 +47,7 @@ all: gcc_version_check linux
 
 modules:
 	git submodule update --init --recursive
-	git submodule foreach git pull origin master
+	# git submodule foreach git pull origin master
 
 gcc_version_check:
 ifneq ($(GCC_MAJOR_VERSION_GE_4), 1)
@@ -57,6 +57,8 @@ ifneq ($(GCC_MINOR_VERSION_GE_7), 1)
 	$(warning "*** WARNING $(GCC) minor version <7 ***")
 endif
 
+tools:
+	mkdir -p tools; cd tools && git clone https://github.com/lh3/minimap.git && cd minimap && make
 
 debug: $(OBJ_FILES_FOLDER_DEBUG)
 	mkdir -p $(dir $(BIN_DEBUG))

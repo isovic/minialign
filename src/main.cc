@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
 
   /// Check if help was triggered.
   if (argparser.GetArgumentByLongName("help")->is_set == true) {
-    fprintf (stderr, "  %s [options] <ref.fasta> <reads.fastq> <overlaps.mhap>\n\n", argv[0]);
+    fprintf (stderr, "  %s [options] <ref.fasta> <reads.fastq> <overlaps.paf/mhap>\n\n", argv[0]);
     fprintf (stderr, "%s\n", argparser.VerboseUsage().c_str());
     exit(1);
   }
