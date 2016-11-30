@@ -80,7 +80,7 @@ int ParsePAF(const std::string &paf_path, const std::map<std::string, int64_t> &
   return 0;
 }
 
-int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std::vector<OverlapLine> &overlaps, int32_t num_threads, SequenceFile &aligned, bool verbose_debug, bool write_right_away) {
+int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std::vector<OverlapLine> &overlaps, int32_t num_threads, SequenceFile &aligned, bool verbose_debug, bool write_right_away, bool use_hard_clipping) {
   // Don't store alignments internally.
   if (write_right_away == false) {
     aligned.Clear();
@@ -177,6 +177,11 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
       if ((omhap.Aend) < (omhap.Alen)) {
         if (aln.cigar().size() > 0 && aln.cigar().back().op == 'S') { aln.cigar().back().count += (omhap.Alen - omhap.Aend); }
         else { CigarOp new_op; new_op.op = 'S'; new_op.count = (omhap.Alen - omhap.Aend); aln.cigar().insert(aln.cigar().end(), new_op); }
+      }
+
+      if (use_hard_clipping == true) {
+        if (aln.cigar().size() > 0 && aln.cigar().front().op == 'S') { aln.cigar().front().op = 'H'; }
+        if (aln.cigar().size() > 0 && aln.cigar().back().op == 'S') { aln.cigar().back().op = 'H'; }
       }
 
       aln.RecalcCigarPositions();

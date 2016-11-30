@@ -41,6 +41,7 @@ int main(int argc, char* argv[]) {
   argparser.AddArgument(&(parameters.overlap_path), VALUE_TYPE_STRING, "", "alnpath", "", "Path to a PAF/MHAP file with read-to-reference overlaps.", -1, "Input/Output options");
 //  argparser.AddArgument(&(parameters.is_paf), VALUE_TYPE_BOOL, "", "paf", "0", "Overlaps are in PAF format instead of MHAP.", 0, "Input/Output options");
   argparser.AddArgument(&(parameters.is_mhap), VALUE_TYPE_BOOL, "", "mhap", "0", "Overlaps are in PAF format instead of MHAP.", 0, "Input/Output options");
+  argparser.AddArgument(&(parameters.use_hard_clipping), VALUE_TYPE_BOOL, "", "hard-clip", "0", "Use hard clipping in the output instead of soft clipping.", 0, "Input/Output options");
   argparser.AddArgument(&(parameters.num_threads), VALUE_TYPE_INT32, "t", "threads", "4", "Number of threads to use.", 0, "Control");
   argparser.AddArgument(&(parameters.verbose_level), VALUE_TYPE_INT32, "v", "verbose", "5", "Verbose level. 0 off, 1 low, 2 medium, 3 high, 4 and 5 all levels, 6-9 debug.", 0, "Other");
   argparser.AddArgument(&help, VALUE_TYPE_BOOL, "h", "help", "0", "View this help.", 0, "Other options");
@@ -110,7 +111,7 @@ int main(int argc, char* argv[]) {
   fflush(stdout);
 
   SequenceFile aligned;
-  AlignOverlaps(seqs_gfa, seqs_reads, overlaps, parameters.num_threads, aligned, true, true);
+  AlignOverlaps(seqs_gfa, seqs_reads, overlaps, parameters.num_threads, aligned, true, true, parameters.use_hard_clipping);
 
   return 0;
 }

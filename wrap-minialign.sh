@@ -21,3 +21,7 @@ echo ""
 cmd="bin/minialign $ref $reads ${out}.paf"
 echo $cmd
 $cmd > ${out}
+
+cmd="bin/minialign --hard-clip $ref $reads ${out}.paf"
+echo $cmd
+$cmd > ${out}.hc.sam

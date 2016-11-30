@@ -25,6 +25,8 @@ struct ProgramParameters {
   bool is_mhap = false;
 
   int32_t verbose_level = 1;
+
+  bool use_hard_clipping = false;
 };
 
 #endif /* SRC_PARAMETERS_H_ */
