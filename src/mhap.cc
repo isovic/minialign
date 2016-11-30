@@ -80,56 +80,6 @@ int ParsePAF(const std::string &paf_path, const std::map<std::string, int64_t> &
   return 0;
 }
 
-
-
-// int FilterMHAP(const std::vector<OverlapLine> &overlaps_in, std::vector<OverlapLine> &overlaps_out, float error_rate) {
-//   std::map<int64_t, OverlapLine> fmap;     // Filtering map.
-
-//   for (int64_t i=0; i<overlaps_in.size(); i++) {
-//     if (!overlaps_in[i].CheckConstraints(error_rate)) {
-//       auto it = fmap.find(overlaps_in[i].Aid);
-//       if (it == fmap.end() || overlaps_in[i].shared_minmers > it->second.shared_minmers) {
-//         fmap[overlaps_in[i].Aid] = overlaps_in[i];
-// //      } else {
-// //        if (overlaps_in[i].shared_minmers > it->second.shared_minmers) {
-// //        }
-//       }
-//     }
-//   }
-//   overlaps_out.clear();
-//   for (auto it = fmap.begin(); it != fmap.end(); it++) {
-//     overlaps_out.push_back(it->second);
-//   }
-
-// //  std::sort(overlaps_out.begin(), overlaps_out.end(), [](const MHAPLine &a, const MHAPLine &b) { return a.Bstart < b.Bstart; });
-
-//   return 0;
-// }
-
-// int FilterMHAPErc(const std::vector<OverlapLine> &overlaps_in, std::vector<OverlapLine> &overlaps_out, float error_rate) {
-//   overlaps_out.clear();
-//   overlaps_out.reserve(overlaps_in.size());
-//   for (int64_t i=0; i<overlaps_in.size(); i++) {
-//     if (!overlaps_in[i].CheckConstraints(error_rate)) {
-//       overlaps_out.push_back(overlaps_in[i]);
-//     }
-//   }
-//   return 0;
-// }
-
-// int DuplicateAndSwitch(const std::vector<OverlapLine> &overlaps_in, std::vector<OverlapLine> &overlaps_out) {
-//   overlaps_out.clear();
-//   overlaps_out.reserve(overlaps_in.size());
-//   for (int64_t i=0; i<overlaps_in.size(); i++) {
-//     overlaps_out.push_back(overlaps_in[i]);
-//     OverlapLine o = overlaps_in[i];
-//     o.Switch();
-//     if (o.Arev) { o.ReverseComplement(); }
-//     overlaps_out.push_back(o);
-//   }
-//   return 0;
-// }
-
 int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std::vector<OverlapLine> &overlaps, int32_t num_threads, SequenceFile &aligned, bool verbose_debug, bool write_right_away) {
   // Don't store alignments internally.
   if (write_right_away == false) {
@@ -239,7 +189,7 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
         if (aln.cigar()[j].op == 'I') { ins += aln.cigar()[j].count; }
         if (aln.cigar()[j].op == 'D') { del += aln.cigar()[j].count; }
       }
-      aln.optional().push_back(FormatString("X1:Z:equal=%ld_x=%ld_ins=%ld_del=%ld", eq, x, ins, del));
+      aln.optional().push_back(FormatString("NM:i:%d\tX1:Z:equal=%ld_x=%ld_ins=%ld_del=%ld", editdist, eq, x, ins, del));
 
       seq->InitAlignment(aln);
 
