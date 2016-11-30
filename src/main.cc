@@ -91,11 +91,6 @@ int main(int argc, char* argv[]) {
 
   LOG_ALL("Loading reads.\n");
   SequenceFile seqs_reads(SEQ_FORMAT_AUTO, parameters.reads_path);
-  // Sanity check to see if the reads have quality values.
-  if (seqs_reads.HasQV() == false) {
-    fprintf (stderr, "ERROR: Reads are not specified in a format which contains quality information. Exiting.\n");
-    exit(1);
-  }
 
   // Hash the read sequences by their name.
   LOG_ALL("Hashing qnames.\n");
@@ -116,12 +111,6 @@ int main(int argc, char* argv[]) {
 
   SequenceFile aligned;
   AlignOverlaps(seqs_gfa, seqs_reads, overlaps, parameters.num_threads, aligned, true, true);
-
-//  for (int64_t i=0; i<aligned.get_sequences().size(); i++) {
-//    std::string sam_line = aligned.get_sequences()[i]->MakeSAMLine();
-//    fprintf (stdout, "%s\n", sam_line.c_str());
-//    fflush(stdout);
-//  }
 
   return 0;
 }

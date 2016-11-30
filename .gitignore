@@ -17,3 +17,5 @@ results/
 *.tee
 *.memtime
 comparison*.sh
+*.sam
+*.paf

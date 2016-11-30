@@ -46,48 +46,6 @@ int ParseMHAP(const std::string &mhap_path, std::vector<OverlapLine> &ret_overla
   return 0;
 }
 
-/**
- * PAF is a bit of a strange format. Both query and target coordinates are given in the fwd strand of both sequences, even though the strand flag
- * might be equal to '-'. Minimap also tends to generate strange overlaps as well. Here is an example (fake) input dataset and the corresponding overlaps:
->read3
-TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
->read4
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
->read4_rev
-GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
-  * read3 has exactly 100 T bases and 200 A bases
-  * read4 has exactly 200 A bases and 100 C bases
-  * read4_rev is the reverse complement of read4
-  *
-  * Output from Minimap 1cd6ae3bc7c7a6f9e7c03c0b7a93a12647bba244 run as minimap/minimap -Sw5 -L100 -m0 -t8 reads.fasta reads34.fasta > reads34.paf
-read3 300 1 300 + read3 300 0 299 298 299 255 cm:i:269
-read3 300 100 300 - read4_rev 300 100 300 200 200 255 cm:i:186
-read3 300 0 199 - read3 300 0 300 199 300 255 cm:i:176
-read4 300 0 299 - read4_rev 300 0 300 299 300 255 cm:i:275
-read4 300 1 300 + read4 300 0 299 298 299 255 cm:i:269
-read4_rev 300 1 300 + read4_rev 300 0 299 298 299 255 cm:i:269
-  *
-  * Output from MHAP 2.1.1:
-2 1 0.000000 72.000000 0 0 72 300 1 10 83 300
-2 1 0.000000 152.000000 0 0 152 300 0 136 289 300
-3 1 0.000272 152.000000 0 99 252 300 1 110 263 300
-3 1 0.000782 52.000000 0 99 152 300 0 36 89 300
-3 2 0.012697 164.000000 0 0 232 300 1 10 243 300
-  *
-  *
-  * Test on another sample dataset, more realistic sequences copied from the beginning of the Lambda genome.
->read5 the first 1500 chars of the Lambda genome reference
-GGGCGGCGACCTCGCGGGTTTTCGCTATTTATGAAAATTTTCCGGTTTAAGGCGTTTCCGTTCTTCTTCGTCATAACTTAATGTTTTTATTTAAAATACCCTCTGAAAAGAAAGGAAACGACAGGTGCTGAAAGCGAGGCTTTTTGGCCTCTGTCGTTTCCTTTCTCTGTTTTTGTCCGTGGAATGAACAATGGAAGTCAACAAAAAGCAGCTGGCTGACATTTTCGGTGCGAGTATCCGTACCATTCAGAACTGGCAGGAACAGGGAATGCCCGTTCTGCGAGGCGGTGGCAAGGGTAATGAGGTGCTTTATGACTCTGCCGCCGTCATAAAATGGTATGCCGAAAGGGATGCTGAAATTGAGAACGAAAAGCTGCGCCGGGAGGTTGAAGAACTGCGGCAGGCCAGCGAGGCAGATCTCCAGCCAGGAACTATTGAGTACGAACGCCATCGACTTACGCGTGCGCAGGCCGACGCACAGGAACTGAAGAATGCCAGAGACTCCGCTGAAGTGGTGGAAACCGCATTCTGTACTTTCGTGCTGTCGCGGATCGCAGGTGAAATTGCCAGTATTCTCGACGGGCTCCCCCTGTCGGTGCAGCGGCGTTTTCCGGAACTGGAAAACCGACATGTTGATTTCCTGAAACGGGATATCATCAAAGCCATGAACAAAGCAGCCGCGCTGGATGAACTGATACCGGGGTTGCTGAGTGAATATATCGAACAGTCAGGTTAACAGGCTGCGGCATTTTGTCCGCGCCGGGCTTCGCTCACTGTTCAGGCCGGAGCCACAGACCGCCGTTGAATGGGCGGATGCTAATTACTATCTCCCGAAAGAATCCGCATACCAGGAAGGGCGCTGGGAAACACTGCCCTTTCAGCGGGCCATCATGAATGCGATGGGCAGCGACTACATCCGTGAGGTGAATGTGGTGAAGTCTGCCCGTGTCGGTTATTCCAAAATGCTGCTGGGTGTTTATGCCTACTTTATAGAGCATAAGCAGCGCAACACCCTTATCTGGTTGCCGACGGATGGTGATGCCGAGAACTTTATGAAAACCCACGTTGAGCCGACTATTCGTGATATTCCGTCGCTGCTGGCGCTGGCCCCGTGGTATGGCAAAAAGCACCGGGATAACACGCTCACCATGAAGCGTTTCACTAATGGGCGTGGCTTCTGGTGCCTGGGCGGTAAAGCGGCAAAAAACTACCGTGAAAAGTCGGTGGATGTGGCGGGTTATGATGAACTTGCTGCTTTTGATGATGATATTGAACAGGAAGGCTCTCCGACGTTCCTGGGTGACAAGCGTATTGAAGGCTCGGTCTGGCCAAAGTCCATCCGTGGCTCCACGCCAAAAGTGAGAGGCACCTGTCAGATTGAGCGTGCAGCCAGTGAATCCCCGCATTTTATGCGTTTTCATGTTGCCTGCCCGCATTGCGGGGAGGAGCAGTATCTTAAATTTGGCGACAAAGAGACGCCGTTTGGCCTCAAATGGACGC
->read6 last 1000 chars of read5 are the same as the first 1000 chars of read6, and the last 500 chars of read6 are new
-ACTCCGCTGAAGTGGTGGAAACCGCATTCTGTACTTTCGTGCTGTCGCGGATCGCAGGTGAAATTGCCAGTATTCTCGACGGGCTCCCCCTGTCGGTGCAGCGGCGTTTTCCGGAACTGGAAAACCGACATGTTGATTTCCTGAAACGGGATATCATCAAAGCCATGAACAAAGCAGCCGCGCTGGATGAACTGATACCGGGGTTGCTGAGTGAATATATCGAACAGTCAGGTTAACAGGCTGCGGCATTTTGTCCGCGCCGGGCTTCGCTCACTGTTCAGGCCGGAGCCACAGACCGCCGTTGAATGGGCGGATGCTAATTACTATCTCCCGAAAGAATCCGCATACCAGGAAGGGCGCTGGGAAACACTGCCCTTTCAGCGGGCCATCATGAATGCGATGGGCAGCGACTACATCCGTGAGGTGAATGTGGTGAAGTCTGCCCGTGTCGGTTATTCCAAAATGCTGCTGGGTGTTTATGCCTACTTTATAGAGCATAAGCAGCGCAACACCCTTATCTGGTTGCCGACGGATGGTGATGCCGAGAACTTTATGAAAACCCACGTTGAGCCGACTATTCGTGATATTCCGTCGCTGCTGGCGCTGGCCCCGTGGTATGGCAAAAAGCACCGGGATAACACGCTCACCATGAAGCGTTTCACTAATGGGCGTGGCTTCTGGTGCCTGGGCGGTAAAGCGGCAAAAAACTACCGTGAAAAGTCGGTGGATGTGGCGGGTTATGATGAACTTGCTGCTTTTGATGATGATATTGAACAGGAAGGCTCTCCGACGTTCCTGGGTGACAAGCGTATTGAAGGCTCGGTCTGGCCAAAGTCCATCCGTGGCTCCACGCCAAAAGTGAGAGGCACCTGTCAGATTGAGCGTGCAGCCAGTGAATCCCCGCATTTTATGCGTTTTCATGTTGCCTGCCCGCATTGCGGGGAGGAGCAGTATCTTAAATTTGGCGACAAAGAGACGCCGTTTGGCCTCAAATGGACGCCGGATGACCCCTCCAGCGTGTTTTATCTCTGCGAGCATAATGCCTGCGTCATCCGCCAGCAGGAGCTGGACTTTACTGATGCCCGTTATATCTGCGAAAAGACCGGGATCTGGACCCGTGATGGCATTCTCTGGTTTTCGTCATCCGGTGAAGAGATTGAGCCACCTGACAGTGTGACCTTTCACATCTGGACAGCGTACAGCCCGTTCACCACCTGGGTGCAGATTGTCAAAGACTGGATGAAAACGAAAGGGGATACGGGAAAACGTAAAACCTTCGTAAACACCACGCTCGGTGAGACGTGGGAGGCGAAAATTGGCGAACGTCCGGATGCTGAAGTGATGGCAGAGCGGAAAGAGCATTATTCAGCGCCCGTTCCTGACCGTGTGGCTTACCTGACCGCCGGTATCGACTCCCAGCTGGACCGCTACGAAATGCGCGTATGGGGATGGGGGCCGGGTGAGGAAAGCTGGCTGATTGACCGGCAGATTATTATGGGC
->read6_rev
-GCCCATAATAATCTGCCGGTCAATCAGCCAGCTTTCCTCACCCGGCCCCCATCCCCATACGCGCATTTCGTAGCGGTCCAGCTGGGAGTCGATACCGGCGGTCAGGTAAGCCACACGGTCAGGAACGGGCGCTGAATAATGCTCTTTCCGCTCTGCCATCACTTCAGCATCCGGACGTTCGCCAATTTTCGCCTCCCACGTCTCACCGAGCGTGGTGTTTACGAAGGTTTTACGTTTTCCCGTATCCCCTTTCGTTTTCATCCAGTCTTTGACAATCTGCACCCAGGTGGTGAACGGGCTGTACGCTGTCCAGATGTGAAAGGTCACACTGTCAGGTGGCTCAATCTCTTCACCGGATGACGAAAACCAGAGAATGCCATCACGGGTCCAGATCCCGGTCTTTTCGCAGATATAACGGGCATCAGTAAAGTCCAGCTCCTGCTGGCGGATGACGCAGGCATTATGCTCGCAGAGATAAAACACGCTGGAGGGGTCATCCGGCGTCCATTTGAGGCCAAACGGCGTCTCTTTGTCGCCAAATTTAAGATACTGCTCCTCCCCGCAATGCGGGCAGGCAACATGAAAACGCATAAAATGCGGGGATTCACTGGCTGCACGCTCAATCTGACAGGTGCCTCTCACTTTTGGCGTGGAGCCACGGATGGACTTTGGCCAGACCGAGCCTTCAATACGCTTGTCACCCAGGAACGTCGGAGAGCCTTCCTGTTCAATATCATCATCAAAAGCAGCAAGTTCATCATAACCCGCCACATCCACCGACTTTTCACGGTAGTTTTTTGCCGCTTTACCGCCCAGGCACCAGAAGCCACGCCCATTAGTGAAACGCTTCATGGTGAGCGTGTTATCCCGGTGCTTTTTGCCATACCACGGGGCCAGCGCCAGCAGCGACGGAATATCACGAATAGTCGGCTCAACGTGGGTTTTCATAAAGTTCTCGGCATCACCATCCGTCGGCAACCAGATAAGGGTGTTGCGCTGCTTATGCTCTATAAAGTAGGCATAAACACCCAGCAGCATTTTGGAATAACCGACACGGGCAGACTTCACCACATTCACCTCACGGATGTAGTCGCTGCCCATCGCATTCATGATGGCCCGCTGAAAGGGCAGTGTTTCCCAGCGCCCTTCCTGGTATGCGGATTCTTTCGGGAGATAGTAATTAGCATCCGCCCATTCAACGGCGGTCTGTGGCTCCGGCCTGAACAGTGAGCGAAGCCCGGCGCGGACAAAATGCCGCAGCCTGTTAACCTGACTGTTCGATATATTCACTCAGCAACCCCGGTATCAGTTCATCCAGCGCGGCTGCTTTGTTCATGGCTTTGATGATATCCCGTTTCAGGAAATCAACATGTCGGTTTTCCAGTTCCGGAAAACGCCGCTGCACCGACAGGGGGAGCCCGTCGAGAATACTGGCAATTTCACCTGCGATCCGCGACAGCACGAAAGTACAGAATGCGGTTTCCACCACTTCAGCGGAGT
-  *
-  * MHAP output:
-2 1 0.000084 989.000000 0 0 989 1500 0 499 1489 1500
-3 1 0.000084 989.000000 0 499 1489 1500 1 510 1499 1500
-3 2 0.000000 1489.000000 0 0 1489 1500 1 10 1499 1500
- */
 int ParsePAF(const std::string &paf_path, const std::map<std::string, int64_t> &qname_to_ids, std::vector<OverlapLine> &ret_overlaps) {
   ret_overlaps.clear();
 
@@ -124,53 +82,53 @@ int ParsePAF(const std::string &paf_path, const std::map<std::string, int64_t> &
 
 
 
-int FilterMHAP(const std::vector<OverlapLine> &overlaps_in, std::vector<OverlapLine> &overlaps_out, float error_rate) {
-  std::map<int64_t, OverlapLine> fmap;     // Filtering map.
+// int FilterMHAP(const std::vector<OverlapLine> &overlaps_in, std::vector<OverlapLine> &overlaps_out, float error_rate) {
+//   std::map<int64_t, OverlapLine> fmap;     // Filtering map.
 
-  for (int64_t i=0; i<overlaps_in.size(); i++) {
-    if (!overlaps_in[i].CheckConstraints(error_rate)) {
-      auto it = fmap.find(overlaps_in[i].Aid);
-      if (it == fmap.end() || overlaps_in[i].shared_minmers > it->second.shared_minmers) {
-        fmap[overlaps_in[i].Aid] = overlaps_in[i];
-//      } else {
-//        if (overlaps_in[i].shared_minmers > it->second.shared_minmers) {
-//        }
-      }
-    }
-  }
-  overlaps_out.clear();
-  for (auto it = fmap.begin(); it != fmap.end(); it++) {
-    overlaps_out.push_back(it->second);
-  }
+//   for (int64_t i=0; i<overlaps_in.size(); i++) {
+//     if (!overlaps_in[i].CheckConstraints(error_rate)) {
+//       auto it = fmap.find(overlaps_in[i].Aid);
+//       if (it == fmap.end() || overlaps_in[i].shared_minmers > it->second.shared_minmers) {
+//         fmap[overlaps_in[i].Aid] = overlaps_in[i];
+// //      } else {
+// //        if (overlaps_in[i].shared_minmers > it->second.shared_minmers) {
+// //        }
+//       }
+//     }
+//   }
+//   overlaps_out.clear();
+//   for (auto it = fmap.begin(); it != fmap.end(); it++) {
+//     overlaps_out.push_back(it->second);
+//   }
 
-//  std::sort(overlaps_out.begin(), overlaps_out.end(), [](const MHAPLine &a, const MHAPLine &b) { return a.Bstart < b.Bstart; });
+// //  std::sort(overlaps_out.begin(), overlaps_out.end(), [](const MHAPLine &a, const MHAPLine &b) { return a.Bstart < b.Bstart; });
 
-  return 0;
-}
+//   return 0;
+// }
 
-int FilterMHAPErc(const std::vector<OverlapLine> &overlaps_in, std::vector<OverlapLine> &overlaps_out, float error_rate) {
-  overlaps_out.clear();
-  overlaps_out.reserve(overlaps_in.size());
-  for (int64_t i=0; i<overlaps_in.size(); i++) {
-    if (!overlaps_in[i].CheckConstraints(error_rate)) {
-      overlaps_out.push_back(overlaps_in[i]);
-    }
-  }
-  return 0;
-}
+// int FilterMHAPErc(const std::vector<OverlapLine> &overlaps_in, std::vector<OverlapLine> &overlaps_out, float error_rate) {
+//   overlaps_out.clear();
+//   overlaps_out.reserve(overlaps_in.size());
+//   for (int64_t i=0; i<overlaps_in.size(); i++) {
+//     if (!overlaps_in[i].CheckConstraints(error_rate)) {
+//       overlaps_out.push_back(overlaps_in[i]);
+//     }
+//   }
+//   return 0;
+// }
 
-int DuplicateAndSwitch(const std::vector<OverlapLine> &overlaps_in, std::vector<OverlapLine> &overlaps_out) {
-  overlaps_out.clear();
-  overlaps_out.reserve(overlaps_in.size());
-  for (int64_t i=0; i<overlaps_in.size(); i++) {
-    overlaps_out.push_back(overlaps_in[i]);
-    OverlapLine o = overlaps_in[i];
-    o.Switch();
-    if (o.Arev) { o.ReverseComplement(); }
-    overlaps_out.push_back(o);
-  }
-  return 0;
-}
+// int DuplicateAndSwitch(const std::vector<OverlapLine> &overlaps_in, std::vector<OverlapLine> &overlaps_out) {
+//   overlaps_out.clear();
+//   overlaps_out.reserve(overlaps_in.size());
+//   for (int64_t i=0; i<overlaps_in.size(); i++) {
+//     overlaps_out.push_back(overlaps_in[i]);
+//     OverlapLine o = overlaps_in[i];
+//     o.Switch();
+//     if (o.Arev) { o.ReverseComplement(); }
+//     overlaps_out.push_back(o);
+//   }
+//   return 0;
+// }
 
 int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std::vector<OverlapLine> &overlaps, int32_t num_threads, SequenceFile &aligned, bool verbose_debug, bool write_right_away) {
   // Don't store alignments internally.
@@ -219,25 +177,11 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
       omhap.Aend = mhap.Alen - mhap.Astart - 1;
     }
 
-//    LOG_ALL(", len = %ld", seq->get_sequence_length());
-//    if (omhap.Alen != seq->get_sequence_length()) {
-//      printf ("\nWrong len! i = %ld, qname: '%s', len = %ld, omhap.Alen = %ld\n", i, seq->get_header(), seq->get_sequence_length(), omhap.Alen);
-//      exit(1);
-//    }
-
     int64_t aln_start = 0, aln_end = 0, editdist = 0;
     std::vector<unsigned char> alignment;
     int rcaln = EdlibNWWrapper(seq->get_data() + omhap.Astart, (omhap.Aend - omhap.Astart),
                             ref->get_data() + omhap.Bstart, (omhap.Bend - omhap.Bstart),
                             &aln_start, &aln_end, &editdist, alignment);
-
-//    if (i == 1710 || i == 1712 || i == 1714 || i == 1722) {
-//      printf ("\ni = %ld, qname: '%s', len = %ld\n", i, seq->get_header(), seq->get_sequence_length());
-//      printf ("Read coords start: %ld, end: %ld, len: %ld:\n%s\n", omhap.Astart, omhap.Aend, omhap.Alen, GetSubstring((char *) (seq->get_data() + omhap.Astart), (omhap.Aend - omhap.Astart)).c_str());
-//      printf ("Ref coords start: %ld, end: %ld, len: %ld:\n%s\n", omhap.Bstart, omhap.Bend, omhap.Blen, GetSubstring((char *) (ref->get_data() + omhap.Bstart), (omhap.Bend - omhap.Bstart)).c_str());
-//      printf ("\n");
-//      fflush(stdout);
-//    }
 
     if (!rcaln) {
       char *cigar_cstring = NULL;
@@ -326,16 +270,6 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
     fflush(stderr);
   }
 
-//  FILE *fp = fopen("temp/debug.sam", "w");
-//  for (int32_t i=0; i<aligned.get_file_header().size(); i++) {
-//    fprintf (fp, "%s\n", aligned.get_file_header()[i].c_str());
-//  }
-//  for (int64_t i=0; i<aligned.get_sequences().size(); i++) {
-//    std::string line = aligned.get_sequences()[i]->MakeSAMLine();
-//    fprintf (fp, "%s\n", line.c_str());
-//  }
-//  fclose(fp);
-
   return 0;
 }
 
@@ -384,7 +318,6 @@ int EdlibNWWrapper(const int8_t *read_data, int64_t read_length,
   int64_t reconstructed_length = CalculateReconstructedLength(alignment, alignment_length);
 
   *ret_alignment_position_start = positions[0] - (reconstructed_length - 1);
-//  *ret_alignment_position_start = start_locations[0];
   *ret_alignment_position_end = positions[0];
   *ret_edit_distance = (int64_t) score;
   ret_alignment.assign(alignment, (alignment + alignment_length));
