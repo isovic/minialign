@@ -12,6 +12,7 @@
 #include <omp.h>
 #include <vector>
 #include <iostream>
+#include <memory>
 
 int ParseMHAP(const std::string &mhap_path, std::vector<OverlapLine> &ret_overlaps) {
   ret_overlaps.clear();
@@ -80,24 +81,10 @@ int ParsePAF(const std::string &paf_path, const std::map<std::string, int64_t> &
   return 0;
 }
 
-int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std::vector<OverlapLine> &overlaps, int32_t num_threads, SequenceFile &aligned, bool verbose_debug, bool write_right_away, bool use_hard_clipping) {
-  // Don't store alignments internally.
-  if (write_right_away == false) {
-    aligned.Clear();
-
-    // Generate the SAM file header, for debugging.
-    std::vector<std::string> sam_header;
-    sam_header.push_back(FormatString("@HD\tVN:1.0\tSO:unknown"));
-    for (int64_t i=0; i<refs.get_sequences().size(); i++) {
-      const SingleSequence *ref = refs.get_sequences()[i];
-      sam_header.push_back(FormatString("@SQ\tSN:%s\tLN:%ld", ref->get_header(), ref->get_data_length()));
-    }
-    aligned.set_file_header(sam_header);
-  }
-
+int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std::vector<OverlapLine> &overlaps, int32_t num_threads, bool verbose_debug, bool use_hard_clipping) {
   int64_t num_skipped_overlaps = 0;
 
-  #pragma omp parallel for num_threads(num_threads) shared(aligned) schedule(dynamic, 1)
+  #pragma omp parallel for num_threads(num_threads) schedule(dynamic, 1)
   for (int64_t i=0; i<overlaps.size(); i++) {
     int32_t thread_id = omp_get_thread_num();
 
@@ -117,10 +104,10 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
 
     std::string ref_name(ref->get_header(), ref->get_header_length());
 
-    SingleSequence *seq = new SingleSequence();
+    std::shared_ptr<SingleSequence> seq(new SingleSequence());
     seq->InitAllFromAscii((char *) read->get_header(), read->get_header_length(),
                           (int8_t *) read->get_data(), (int8_t *) read->get_quality(), read->get_data_length(),
-                          aligned.get_sequences().size(), aligned.get_sequences().size());
+                          0, 0);
     if (omhap.Brev) {
       seq->ReverseComplement();
       omhap.Astart = mhap.Alen - mhap.Aend;
@@ -138,6 +125,10 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
       int rccig = edlibAlignmentToCigar(&alignment[0], alignment.size(), EDLIB_CIGAR_EXTENDED, &cigar_cstring);
 
       std::string cigar_string(cigar_cstring);
+
+      if (cigar_cstring) {
+        free(cigar_cstring);
+      }
 
       SequenceAlignment aln;
       aln.SetCigarFromString(cigar_string);
@@ -198,23 +189,18 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
 
       seq->InitAlignment(aln);
 
-      if (write_right_away == false) {
-        #pragma omp critical
-        aligned.AddSequence(seq, true);
-      } else {
         std::string sam_line = seq->MakeSAMLine();
         #pragma omp critical
         {
           fprintf (stdout, "%s\n", sam_line.c_str());
           fflush(stdout);
         }
-      }
 
     } else {
-      if (seq) {
-        delete seq;
-        seq = NULL;
-      }
+//      if (seq) {
+//        delete seq;
+//        seq = NULL;
+//      }
       num_skipped_overlaps += 1;
     }
 

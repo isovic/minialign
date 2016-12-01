@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
   fflush(stdout);
 
   SequenceFile aligned;
-  AlignOverlaps(seqs_gfa, seqs_reads, overlaps, parameters.num_threads, aligned, true, true, parameters.use_hard_clipping);
+  AlignOverlaps(seqs_gfa, seqs_reads, overlaps, parameters.num_threads, true, parameters.use_hard_clipping);
 
   return 0;
 }
