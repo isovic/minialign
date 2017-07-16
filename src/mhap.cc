@@ -187,6 +187,27 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
       }
       aln.optional().push_back(FormatString("NM:i:%d\tX1:Z:equal=%ld_x=%ld_ins=%ld_del=%ld", editdist, eq, x, ins, del));
 
+      if (use_basic_cigar) {
+        if (aln.cigar().size() > 0) {
+          if (aln.cigar()[0].op == 'X' || aln.cigar()[0].op == '=')) {
+            aln.cigar()[0].op = 'M';
+          }
+        }
+        int64_t curr_j=0;
+        for (int64_t j=1; j<aln.cigar().size(); j++) {
+          if (aln.cigar()[j].op == 'X' || aln.cigar()[j].op == '=')) {
+            aln.cigar()[j].op = 'M';
+          }
+          if (aln.cigar()[j].op == aln.cigar()[curr_j].op) {
+            aln.cigar()[curr_j].count += aln.cigar()[j];
+          } else {
+            curr_j += 1;
+            aln_cigar()[curr_j] = aln_cigar()[j];
+          }
+        }
+        aln.cigar().resize(curr_j);
+      }
+
       seq->InitAlignment(aln);
 
         std::string sam_line = seq->MakeSAMLine();
