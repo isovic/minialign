@@ -189,33 +189,33 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
 
       if (use_basic_cigar) {
         if (aln.cigar().size() > 0) {
-          if (aln.cigar()[0].op == 'X' || aln.cigar()[0].op == '=')) {
+          if (aln.cigar()[0].op == 'X' || aln.cigar()[0].op == '=') {
             aln.cigar()[0].op = 'M';
           }
         }
         int64_t curr_j=0;
         for (int64_t j=1; j<aln.cigar().size(); j++) {
-          if (aln.cigar()[j].op == 'X' || aln.cigar()[j].op == '=')) {
+          if (aln.cigar()[j].op == 'X' || aln.cigar()[j].op == '=') {
             aln.cigar()[j].op = 'M';
           }
           if (aln.cigar()[j].op == aln.cigar()[curr_j].op) {
-            aln.cigar()[curr_j].count += aln.cigar()[j];
+            aln.cigar()[curr_j].count += aln.cigar()[j].count;
           } else {
             curr_j += 1;
-            aln_cigar()[curr_j] = aln_cigar()[j];
+            aln.cigar()[curr_j] = aln.cigar()[j];
           }
         }
-        aln.cigar().resize(curr_j);
+        aln.cigar().resize(curr_j+1);
       }
 
       seq->InitAlignment(aln);
 
-        std::string sam_line = seq->MakeSAMLine();
-        #pragma omp critical
-        {
-          fprintf (stdout, "%s\n", sam_line.c_str());
-          fflush(stdout);
-        }
+      std::string sam_line = seq->MakeSAMLine();
+      #pragma omp critical
+      {
+        fprintf (stdout, "%s\n", sam_line.c_str());
+        fflush(stdout);
+      }
 
     } else {
 //      if (seq) {
