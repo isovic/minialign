@@ -27,6 +27,7 @@ struct ProgramParameters {
   int32_t verbose_level = 1;
 
   bool use_hard_clipping = false;
+  bool use_basic_cigar = false;
 };
 
 #endif /* SRC_PARAMETERS_H_ */

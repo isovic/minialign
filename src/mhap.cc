@@ -81,7 +81,7 @@ int ParsePAF(const std::string &paf_path, const std::map<std::string, int64_t> &
   return 0;
 }
 
-int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std::vector<OverlapLine> &overlaps, int32_t num_threads, bool verbose_debug, bool use_hard_clipping) {
+int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std::vector<OverlapLine> &overlaps, int32_t num_threads, bool verbose_debug, bool use_hard_clipping, bool use_basic_cigar) {
   int64_t num_skipped_overlaps = 0;
 
   #pragma omp parallel for num_threads(num_threads) schedule(dynamic, 1)
