@@ -135,7 +135,7 @@ int AlignOverlaps(const SequenceFile &refs, const SequenceFile &reads, const std
       aln.set_pos(omhap.Bstart + aln_start + 1);
       aln.set_flag((int32_t) (16 * omhap.Brev));     // 0 if fwd and 16 if rev.
       aln.set_mapq(40);
-      aln.set_rname(ref_name);
+      aln.set_rname(TrimToFirstSpace(ref_name));
 
       // Remove insertions at front.
       for (int32_t j=0; j<aln.cigar().size(); j++) {
